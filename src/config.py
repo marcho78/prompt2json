@@ -20,18 +20,20 @@ class Settings(BaseSettings):
     # CORS settings
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     
-    # Database settings
-    DATABASE_URL: str = "sqlite:///./prompts.db"
+    # Database settings - PostgreSQL (Neon)
+    DATABASE_URL: str = "postgresql://neondb_owner:password@host.neon.tech/neondb?sslmode=require&channel_binding=require"
     
     def get_database_url(self) -> str:
-        """Get database URL optimized for deployment environment"""
-        # Check if we're in a serverless environment (like Leapcell)
-        if os.environ.get('LEAPCELL_ENVIRONMENT') or '/tmp' in os.getcwd() or not os.access('.', os.W_OK):
-            # Use /tmp directory for serverless environments (no subdirectories)
-            return "sqlite:////tmp/prompts.db"
+        """Get PostgreSQL database URL from environment variables"""
+        # Always use environment variable for database connection
+        # Format: postgresql://neondb_owner:password@ep-host.neon.tech/neondb?sslmode=require&channel_binding=require
+        database_url = os.environ.get('DATABASE_URL', self.DATABASE_URL)
         
-        # Use environment variable if set, otherwise default
-        return os.environ.get('DATABASE_URL', self.DATABASE_URL)
+        # Ensure it's a PostgreSQL URL
+        if not database_url.startswith('postgresql://'):
+            raise ValueError("DATABASE_URL must be a PostgreSQL connection string starting with 'postgresql://'")
+        
+        return database_url
     
     # LLM Provider settings
     ANTHROPIC_API_KEY: Optional[str] = None

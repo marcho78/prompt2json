@@ -30,7 +30,8 @@ https://api.your-domain.com  (Production)
 - 👤 Anonymous and authenticated access
 - ⚡ Smart rate limiting with daily quotas
 - 🔧 Prompt optimization and testing
-- 📊 Quality analysis and scoring
+- 📈 Quality analysis and scoring
+- 💾 PostgreSQL database for reliable data persistence
 
 ---
 

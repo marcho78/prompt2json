@@ -22,7 +22,7 @@ A comprehensive FastAPI application that generates structured JSON prompts for L
 - **🛡️ IP-Based Tracking**: Fair usage enforcement for anonymous users
 
 ### Technical Features
-- **💾 Database Persistence**: SQLite/PostgreSQL support for prompt storage
+- **💾 Database Persistence**: PostgreSQL database for reliable prompt and user storage
 - **⚡ Redis Caching**: High-performance rate limiting and caching
 - **📖 API Documentation**: Interactive OpenAPI/Swagger documentation
 - **🔄 Async Processing**: Full async/await implementation for optimal performance
@@ -107,16 +107,36 @@ Edit the `.env` file to customize application settings:
 
 ```env
 # Application Configuration
-APP_NAME=JSON2Prompt API
+APP_NAME=AI JSON Prompt Generator API
 DEBUG=true
 HOST=127.0.0.1
 PORT=8000
 
+# Database Configuration - PostgreSQL (Required)
+DATABASE_URL=postgresql://neondb_owner:your_password@ep-your-endpoint.neon.tech/neondb?sslmode=require&channel_binding=require
+
+# Security Configuration
+SECRET_KEY=your-secret-key-change-this-in-production
+
 # CORS Configuration
 ALLOWED_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
 
-# API Configuration
-SECRET_KEY=your-secret-key-change-this-in-production
+# Redis Configuration (for rate limiting)
+REDIS_URL=redis://localhost:6379
+```
+
+#### Database Setup
+
+This application requires a **PostgreSQL database**. We recommend using [Neon](https://neon.tech) for a free PostgreSQL database:
+
+1. Create a free account at [neon.tech](https://neon.tech)
+2. Create a new database project
+3. Copy the connection string from your Neon dashboard
+4. Add it to your `.env` file as `DATABASE_URL`
+
+The connection string format is:
+```
+postgresql://username:password@host/database?sslmode=require&channel_binding=require
 ```
 
 ## Usage

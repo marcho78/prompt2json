@@ -106,16 +106,12 @@ class OptimizationHistory(Base):
 
 
 def create_tables():
-    """Create all database tables"""
-    import os
-    
-    # Ensure database directory exists for SQLite
-    if database_url.startswith('sqlite:///'):
-        db_path = database_url.replace('sqlite:///', '')
-        db_dir = os.path.dirname(db_path)
-        if db_dir and not os.path.exists(db_dir):
-            os.makedirs(db_dir, exist_ok=True)
-            print(f"Created database directory: {db_dir}")
-    
-    Base.metadata.create_all(bind=engine)
-    print(f"Database tables created successfully at: {database_url}")
+    """Create all database tables for PostgreSQL"""
+    try:
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        print(f"✅ PostgreSQL database tables created successfully")
+        print(f"🔗 Connected to: {database_url.split('@')[1].split('/')[0] if '@' in database_url else 'database'}")
+    except Exception as e:
+        print(f"❌ Database table creation failed: {e}")
+        raise
