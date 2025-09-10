@@ -114,6 +114,13 @@ else:
             "missing_features": ["authentication", "prompt_generation", "rate_limiting"]
         }
 
+# Leapcell health check endpoints
+@app.get("/kaithhealthcheck")
+@app.get("/kaithheathcheck") 
+async def leapcell_health_check():
+    """Leapcell-specific health check endpoint"""
+    return {"status": "healthy"}
+
 # Test endpoint - always works
 @app.get("/api/v1/test")
 async def test_endpoint():
