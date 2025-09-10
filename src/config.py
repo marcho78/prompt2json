@@ -26,12 +26,20 @@ class Settings(BaseSettings):
     def get_database_url(self) -> str:
         """Get PostgreSQL database URL from environment variables"""
         # Always use environment variable for database connection
-        # Format: postgresql://neondb_owner:password@ep-host.neon.tech/neondb?sslmode=require&channel_binding=require
-        database_url = os.environ.get('DATABASE_URL', self.DATABASE_URL)
+        database_url = os.environ.get('DATABASE_URL')
+        
+        if not database_url:
+            raise ValueError(
+                "DATABASE_URL environment variable is required. "
+                "Format: postgresql://user:password@host:port/database?sslmode=require"
+            )
         
         # Ensure it's a PostgreSQL URL
         if not database_url.startswith('postgresql://'):
-            raise ValueError("DATABASE_URL must be a PostgreSQL connection string starting with 'postgresql://'")
+            raise ValueError(
+                f"DATABASE_URL must be a PostgreSQL connection string starting with 'postgresql://'. "
+                f"Got: {database_url[:50]}..."
+            )
         
         return database_url
     

@@ -5,9 +5,6 @@ from src.config import settings
 from src.models.database import create_tables
 from src.api.routes import generate, optimize, templates, test, analyze, convert, merge, auth, usage
 
-# Create database tables on startup
-create_tables()
-
 app = FastAPI(
     title=settings.APP_NAME,
     description="FastAPI application that generates structured JSON prompts for LLMs from natural language descriptions",
@@ -24,6 +21,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    try:
+        create_tables()
+    except Exception as e:
+        print(f"❌ Failed to initialize database: {e}")
+        raise
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])

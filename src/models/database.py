@@ -8,14 +8,29 @@ from src.config import settings
 
 Base = declarative_base()
 
-# Database engine and session
-database_url = settings.get_database_url()
-engine = create_engine(database_url, echo=settings.DEBUG)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Database engine and session - initialized lazily
+engine = None
+SessionLocal = None
+
+def get_engine():
+    """Get database engine, initializing if needed"""
+    global engine
+    if engine is None:
+        database_url = settings.get_database_url()
+        engine = create_engine(database_url, echo=settings.DEBUG)
+    return engine
+
+def get_session_local():
+    """Get SessionLocal, initializing if needed"""
+    global SessionLocal
+    if SessionLocal is None:
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
+    return SessionLocal
 
 
 def get_db():
     """Database dependency"""
+    SessionLocal = get_session_local()
     db = SessionLocal()
     try:
         yield db
@@ -108,6 +123,10 @@ class OptimizationHistory(Base):
 def create_tables():
     """Create all database tables for PostgreSQL"""
     try:
+        # Get engine and database URL
+        engine = get_engine()
+        database_url = settings.get_database_url()
+        
         # Create all tables
         Base.metadata.create_all(bind=engine)
         print(f"✅ PostgreSQL database tables created successfully")

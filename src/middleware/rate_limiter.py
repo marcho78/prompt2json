@@ -25,14 +25,12 @@ class FreeRateLimiter:
         self._initialize_redis()
     
     def _initialize_redis(self):
-        """Initialize Redis connection"""
+        """Initialize Redis connection - DISABLED for deployment stability"""
         try:
-            self.redis_client = redis.from_url(
-                settings.REDIS_URL,
-                encoding="utf-8",
-                decode_responses=True
-            )
-            logger.info("Redis client initialized for rate limiting")
+            # Temporarily disable Redis for deployment stability
+            logger.info("Redis disabled for deployment - using in-memory rate limiting")
+            self.redis_client = None
+            self._memory_storage = {}
         except Exception as e:
             logger.warning(f"Redis initialization failed, using in-memory fallback: {e}")
             self.redis_client = None

@@ -47,7 +47,13 @@ async def generate_prompt(
         prompt_structure = await prompt_generator.generate_prompt(prompt_request)
         
         # Convert to dict for response and storage
-        prompt_dict = prompt_structure.dict()
+        try:
+            prompt_dict = prompt_structure.dict() if hasattr(prompt_structure, 'dict') else prompt_structure.__dict__
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to serialize prompt structure: {str(e)}"
+            )
         
         # Calculate additional metadata
         complexity_score = _calculate_complexity_score(prompt_structure)
