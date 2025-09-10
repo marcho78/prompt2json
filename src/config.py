@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 import secrets
+import os
 
 
 class Settings(BaseSettings):
@@ -21,6 +22,16 @@ class Settings(BaseSettings):
     
     # Database settings
     DATABASE_URL: str = "sqlite:///./prompts.db"
+    
+    def get_database_url(self) -> str:
+        """Get database URL optimized for deployment environment"""
+        # Check if we're in a serverless environment (like Leapcell)
+        if os.environ.get('LEAPCELL_ENVIRONMENT') or '/tmp' in os.getcwd() or not os.access('.', os.W_OK):
+            # Use /tmp directory for serverless environments
+            return "sqlite:///tmp/prompts.db"
+        
+        # Use environment variable if set, otherwise default
+        return os.environ.get('DATABASE_URL', self.DATABASE_URL)
     
     # LLM Provider settings
     ANTHROPIC_API_KEY: Optional[str] = None

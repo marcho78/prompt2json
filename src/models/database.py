@@ -9,7 +9,8 @@ from src.config import settings
 Base = declarative_base()
 
 # Database engine and session
-engine = create_engine(settings.DATABASE_URL, echo=settings.DEBUG)
+database_url = settings.get_database_url()
+engine = create_engine(database_url, echo=settings.DEBUG)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
