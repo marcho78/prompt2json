@@ -7,20 +7,41 @@ import sys
 # Try to import our full application components
 try:
     from src.config import settings
-    from src.models.database import create_tables, database_url
-    from src.api.routes import generate, optimize, templates, test, analyze, convert, merge, auth, usage
-    FULL_APP_AVAILABLE = True
-    print(f"✅ Full app components loaded successfully")
-    print(f"📁 Database URL: {database_url}")
+    print(f"✅ Settings loaded successfully")
+    
+    # Try database initialization
+    try:
+        from src.models.database import create_tables, database_url
+        DATABASE_COMPONENTS = True
+        print(f"✅ Database components loaded")
+        print(f"📁 Database URL configured: {database_url[:50]}...")
+    except Exception as db_error:
+        print(f"⚠️  Database components failed to load: {db_error}")
+        DATABASE_COMPONENTS = False
+        database_url = "not_available"
+    
+    # Try to load API routes
+    try:
+        from src.api.routes import generate, optimize, templates, test, analyze, convert, merge, auth, usage
+        ROUTES_AVAILABLE = True
+        print(f"✅ API routes loaded successfully")
+    except Exception as routes_error:
+        print(f"⚠️  API routes failed to load: {routes_error}")
+        ROUTES_AVAILABLE = False
+    
+    FULL_APP_AVAILABLE = DATABASE_COMPONENTS and ROUTES_AVAILABLE
     
     # Create database tables on startup (with error handling)
-    try:
-        print(f"📋 Creating database tables...")
-        create_tables()
-        DATABASE_READY = True
-        print(f"✅ Database initialized successfully")
-    except Exception as e:
-        print(f"⚠️  Database initialization warning: {e}")
+    if DATABASE_COMPONENTS:
+        try:
+            print(f"📋 Creating database tables...")
+            create_tables()
+            DATABASE_READY = True
+            print(f"✅ Database initialized successfully")
+        except Exception as e:
+            print(f"⚠️  Database initialization warning: {e}")
+            DATABASE_READY = False
+    else:
         DATABASE_READY = False
         
 except ImportError as e:
@@ -58,18 +79,22 @@ app.add_middleware(
 )
 
 # Include routers (conditional based on availability)
-if FULL_APP_AVAILABLE:
+if FULL_APP_AVAILABLE and ROUTES_AVAILABLE:
     print(f"🚀 Loading full application routes...")
-    app.include_router(auth.router, prefix="/auth", tags=["authentication"])
-    app.include_router(generate.router, prefix="/api/v1", tags=["prompt-generation"])
-    app.include_router(optimize.router, prefix="/api/v1", tags=["prompt-optimization"])  
-    app.include_router(convert.router, prefix="/api/v1", tags=["prompt-conversion"])
-    app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
-    app.include_router(test.router, prefix="/api/v1", tags=["prompt-testing"])
-    app.include_router(analyze.router, prefix="/api/v1", tags=["prompt-analysis"])
-    app.include_router(merge.router, prefix="/api/v1", tags=["prompt-merging"])
-    app.include_router(usage.router, prefix="/api/v1", tags=["usage-monitoring"])
-    print(f"✅ All routes loaded successfully")
+    try:
+        app.include_router(auth.router, prefix="/auth", tags=["authentication"])
+        app.include_router(generate.router, prefix="/api/v1", tags=["prompt-generation"])
+        app.include_router(optimize.router, prefix="/api/v1", tags=["prompt-optimization"])  
+        app.include_router(convert.router, prefix="/api/v1", tags=["prompt-conversion"])
+        app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
+        app.include_router(test.router, prefix="/api/v1", tags=["prompt-testing"])
+        app.include_router(analyze.router, prefix="/api/v1", tags=["prompt-analysis"])
+        app.include_router(merge.router, prefix="/api/v1", tags=["prompt-merging"])
+        app.include_router(usage.router, prefix="/api/v1", tags=["usage-monitoring"])
+        print(f"✅ All routes loaded successfully")
+    except Exception as route_error:
+        print(f"❌ Route loading failed: {route_error}")
+        FULL_APP_AVAILABLE = False
 else:
     print(f"⚠️  Running with fallback routes only")
     # Fallback: Basic endpoints for testing
