@@ -1,0 +1,67 @@
+{
+  "name": "AI JSON Prompt Generator API",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/redis-server:1": {
+      "version": "latest"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "python.formatting.provider": "black",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "editor.formatOnSave": true,
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/*.pyc": true,
+          ".env": true,
+          "app-req.json": true,
+          "app-doc-req.json": true
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.pylint",
+        "ms-python.autopep8",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "humao.rest-client",
+        "ms-vscode.vscode-thunder-client"
+      ]
+    }
+  },
+
+  "forwardPorts": [8000, 6379],
+  "portsAttributes": {
+    "8000": {
+      "label": "FastAPI Server",
+      "onAutoForward": "notify",
+      "protocol": "http",
+      "requireLocalPort": false
+    },
+    "6379": {
+      "label": "Redis Server",
+      "onAutoForward": "silent",
+      "protocol": "tcp"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "redis-server --daemonize yes",
+
+  "remoteUser": "vscode",
+  "updateContentCommand": "pip install -r requirements.txt",
+  
+  "mounts": [
+    "source=${localWorkspaceFolder}/.env,target=${containerWorkspaceFolder}/.env,type=bind,consistency=cached"
+  ]
+}
