@@ -1,5 +1,5 @@
 from typing import Dict, Optional, Tuple
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import hashlib
 from fastapi import HTTPException, status, Request
@@ -270,7 +270,7 @@ class FreeRateLimiter:
         """Get next UTC midnight as ISO string"""
         now = datetime.now(timezone.utc)
         next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) + \
-                       datetime.timedelta(days=1)
+                       timedelta(days=1)
         return next_midnight.isoformat()
     
     async def get_usage_stats(self, request: Request, user_id: Optional[str] = None) -> Dict:

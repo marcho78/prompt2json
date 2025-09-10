@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Optional
+from src.config import settings
 from src.schemas.request_schemas import GeneratePromptRequest
 from src.schemas.response_schemas import GeneratePromptResponse, PromptMetadata
 from src.models.database import get_db, GeneratedPrompt, User
