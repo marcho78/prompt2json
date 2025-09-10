@@ -147,3 +147,8 @@ Thumbs.db
 # Project specific
 logs/
 *.db
+
+# Development and sensitive files
+app-req.json
+app-doc-req.json
+.env
