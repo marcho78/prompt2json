@@ -27,8 +27,8 @@ class Settings(BaseSettings):
         """Get database URL optimized for deployment environment"""
         # Check if we're in a serverless environment (like Leapcell)
         if os.environ.get('LEAPCELL_ENVIRONMENT') or '/tmp' in os.getcwd() or not os.access('.', os.W_OK):
-            # Use /tmp directory for serverless environments
-            return "sqlite:///tmp/prompts.db"
+            # Use /tmp directory for serverless environments (no subdirectories)
+            return "sqlite:////tmp/prompts.db"
         
         # Use environment variable if set, otherwise default
         return os.environ.get('DATABASE_URL', self.DATABASE_URL)
