@@ -1,0 +1,201 @@
+{
+  "data_extraction": {
+    "name": "Data Extraction Template",
+    "description": "Extract structured data from unstructured text",
+    "category": "data_processing",
+    "complexity": "moderate",
+    "components": ["entity_recognition", "relationship_mapping", "data_validation"],
+    "template": {
+      "task": "data_extraction",
+      "system_message": "You are an expert data extraction specialist with precise analytical skills.",
+      "instructions": {
+        "primary_goal": "Extract structured data from unstructured text according to the specified schema",
+        "steps": [
+          "Analyze the input text structure and content carefully",
+          "Identify all relevant entities mentioned in the text",
+          "Map relationships between identified entities",
+          "Extract data points according to the output schema",
+          "Validate extracted data for completeness and accuracy",
+          "Format the output according to specifications"
+        ],
+        "context": "Focus on accuracy and completeness. Extract all relevant information without making assumptions about missing data."
+      },
+      "input_format": {
+        "type": "string",
+        "description": "Unstructured text containing data to extract",
+        "constraints": ["Non-empty text", "UTF-8 encoding", "Maximum 10000 characters"]
+      },
+      "output_format": {
+        "type": "object",
+        "properties": {
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {"type": "string"},
+                "value": {"type": "string"},
+                "confidence": {"type": "number"}
+              }
+            }
+          },
+          "relationships": {
+            "type": "array", 
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": {"type": "string"},
+                "target": {"type": "string"},
+                "relationship": {"type": "string"}
+              }
+            }
+          }
+        },
+        "required": ["entities"]
+      },
+      "examples": [
+        {
+          "input": "John Doe works at ABC Corp as a Software Engineer. He joined the company in 2020.",
+          "output": {
+            "entities": [
+              {"type": "person", "value": "John Doe", "confidence": 0.95},
+              {"type": "company", "value": "ABC Corp", "confidence": 0.90},
+              {"type": "position", "value": "Software Engineer", "confidence": 0.85},
+              {"type": "date", "value": "2020", "confidence": 0.90}
+            ],
+            "relationships": [
+              {"source": "John Doe", "target": "ABC Corp", "relationship": "works_at"},
+              {"source": "John Doe", "target": "Software Engineer", "relationship": "has_position"}
+            ]
+          },
+          "explanation": "Extract person, company, job title and employment date with confidence scores"
+        }
+      ],
+      "constraints": [
+        "Extract only factual information present in the text",
+        "Do not infer or assume missing information",
+        "Provide confidence scores for uncertain extractions",
+        "Maintain original text casing and formatting where appropriate"
+      ],
+      "edge_cases": [
+        "Handle ambiguous entity references",
+        "Process incomplete or corrupted text segments",
+        "Manage overlapping or nested entities"
+      ]
+    }
+  },
+  "code_generation": {
+    "name": "Code Generation Template",
+    "description": "Generate code from natural language specifications",
+    "category": "development",
+    "complexity": "complex",
+    "components": ["requirements_parsing", "code_structure", "error_handling", "documentation"],
+    "template": {
+      "task": "code_generation",
+      "system_message": "You are a senior software engineer with expertise in multiple programming languages and best practices.",
+      "instructions": {
+        "primary_goal": "Generate clean, efficient, and well-documented code based on the provided specifications",
+        "steps": [
+          "Parse and understand the requirements thoroughly",
+          "Design the code structure and architecture",
+          "Implement the core functionality",
+          "Add appropriate error handling",
+          "Include comprehensive documentation",
+          "Validate the code against requirements"
+        ],
+        "context": "Write production-ready code following industry best practices and coding standards."
+      },
+      "input_format": {
+        "type": "object",
+        "description": "Code generation requirements and specifications",
+        "constraints": ["Valid requirements specification", "Supported programming language"]
+      },
+      "output_format": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string"},
+          "language": {"type": "string"},
+          "documentation": {"type": "string"},
+          "tests": {"type": "string"},
+          "dependencies": {"type": "array"}
+        },
+        "required": ["code", "language"]
+      }
+    }
+  },
+  "analysis": {
+    "name": "Content Analysis Template",
+    "description": "Analyze content for insights and patterns",
+    "category": "analytics",
+    "complexity": "moderate",
+    "components": ["data_understanding", "pattern_recognition", "insight_generation", "recommendation"],
+    "template": {
+      "task": "analysis",
+      "system_message": "You are a skilled analyst capable of extracting insights from complex information.",
+      "instructions": {
+        "primary_goal": "Analyze the provided content and generate actionable insights",
+        "steps": [
+          "Examine the input data comprehensively",
+          "Identify patterns, trends, and anomalies",
+          "Apply relevant analytical frameworks",
+          "Generate clear insights and conclusions",
+          "Provide actionable recommendations based on findings"
+        ],
+        "context": "Provide thorough and objective analysis. Support all conclusions with evidence from the input data."
+      },
+      "input_format": {
+        "type": "string",
+        "description": "Content or data to analyze",
+        "constraints": ["Analyzable content format", "Sufficient data for meaningful analysis"]
+      },
+      "output_format": {
+        "type": "object",
+        "properties": {
+          "summary": {"type": "string"},
+          "key_findings": {"type": "array"},
+          "insights": {"type": "array"},
+          "recommendations": {"type": "array"},
+          "confidence_level": {"type": "string"}
+        },
+        "required": ["summary", "key_findings", "insights"]
+      }
+    }
+  },
+  "creative_writing": {
+    "name": "Creative Writing Template",
+    "description": "Generate creative content with specific style and requirements",
+    "category": "content_creation",
+    "complexity": "moderate",
+    "components": ["style_definition", "tone_setting", "structure_planning", "creativity_constraints"],
+    "template": {
+      "task": "creative_writing",
+      "system_message": "You are a creative writer with excellent storytelling abilities and mastery of various writing styles.",
+      "instructions": {
+        "primary_goal": "Create engaging creative content that meets the specified requirements and style guidelines",
+        "steps": [
+          "Understand the creative brief and requirements",
+          "Establish the appropriate tone and style",
+          "Plan the content structure and flow",
+          "Write compelling and original content",
+          "Review and refine for quality and coherence"
+        ],
+        "context": "Be creative while maintaining coherence and meeting all specified requirements. Focus on engaging the target audience."
+      },
+      "input_format": {
+        "type": "object",
+        "description": "Creative writing specifications including style, tone, length, and topic",
+        "constraints": ["Clear creative brief", "Appropriate content guidelines"]
+      },
+      "output_format": {
+        "type": "object",
+        "properties": {
+          "content": {"type": "string"},
+          "style": {"type": "string"},
+          "word_count": {"type": "number"},
+          "target_audience": {"type": "string"}
+        },
+        "required": ["content"]
+      }
+    }
+  }
+}
