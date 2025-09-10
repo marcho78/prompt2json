@@ -20,8 +20,7 @@ token_counter = TokenCounter()
 async def generate_prompt(
     prompt_request: GeneratePromptRequest,
     request: Request,
-    current_user: Optional[User] = Depends(get_current_user_optional),
-    db: Session = Depends(get_db)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Generate a structured JSON prompt from natural language description
@@ -71,19 +70,28 @@ async def generate_prompt(
         
         # Store the generated prompt in database (only for registered users)
         if current_user:
-            db_prompt = GeneratedPrompt(
-                user_id=current_user.id,
-                description=prompt_request.description,
-                target_llm=prompt_request.target_llm.value,
-                complexity=prompt_request.complexity.value,
-                prompt_data=prompt_dict,
-                prompt_metadata=metadata.dict(),
-                optimization_goals=[goal.value for goal in prompt_request.optimization_goals]
-            )
-            
-            db.add(db_prompt)
-            db.commit()
-            db.refresh(db_prompt)
+            try:
+                # Get DB session only when needed
+                db = next(get_db())
+                try:
+                    db_prompt = GeneratedPrompt(
+                        user_id=current_user.id,
+                        description=prompt_request.description,
+                        target_llm=prompt_request.target_llm.value,
+                        complexity=prompt_request.complexity.value,
+                        prompt_data=prompt_dict,
+                        prompt_metadata=metadata.dict(),
+                        optimization_goals=[goal.value for goal in prompt_request.optimization_goals]
+                    )
+                    
+                    db.add(db_prompt)
+                    db.commit()
+                    db.refresh(db_prompt)
+                finally:
+                    db.close()
+            except Exception as db_error:
+                # Don't fail the entire request if DB storage fails
+                print(f"Warning: Failed to store prompt in database: {db_error}")
         
         # Create response with rate limiting info
         response_data = {
