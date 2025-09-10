@@ -34,7 +34,7 @@ class AnthropicService(BaseLLMService):
     async def generate_text(
         self, 
         messages: List[Dict[str, str]], 
-        model: str = "claude-3-sonnet-20240229",
+        model: str = "claude-3-5-sonnet-20241022",
         max_tokens: int = 4000,
         temperature: float = 0.7,
         **kwargs

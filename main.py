@@ -11,10 +11,16 @@ try:
     
     # Try database initialization
     try:
-        from src.models.database import create_tables, database_url
+        from src.models.database import create_tables
         DATABASE_COMPONENTS = True
         print(f"✅ Database components loaded")
-        print(f"📁 Database URL configured: {database_url[:50]}...")
+        # Get database URL for display only - don't fail if not available
+        try:
+            database_url = settings.get_database_url()
+            print(f"📁 Database URL configured: PostgreSQL connection")
+        except:
+            database_url = "DATABASE_URL not set"
+            print(f"⚠️  DATABASE_URL environment variable not set")
     except Exception as db_error:
         print(f"⚠️  Database components failed to load: {db_error}")
         DATABASE_COMPONENTS = False
@@ -41,8 +47,10 @@ try:
         except Exception as e:
             print(f"⚠️  Database initialization warning: {e}")
             DATABASE_READY = False
+            # Don't fail completely - app can still run for basic health checks
     else:
         DATABASE_READY = False
+        print(f"⚠️  Database not available - app running in limited mode")
         
 except ImportError as e:
     print(f"❌ Full app imports failed: {e}")
@@ -106,6 +114,17 @@ else:
             "missing_features": ["authentication", "prompt_generation", "rate_limiting"]
         }
 
+# Test endpoint - always works
+@app.get("/api/v1/test")
+async def test_endpoint():
+    """Simple test endpoint that always works"""
+    return {
+        "status": "ok",
+        "message": "API is responding",
+        "timestamp": "2025-01-10T21:40:00Z",
+        "test_passed": True
+    }
+
 # Health check endpoints
 @app.get("/health")
 async def health_check():
@@ -116,7 +135,7 @@ async def health_check():
         "version": settings.VERSION,
         "full_app_loaded": FULL_APP_AVAILABLE,
         "database_ready": DATABASE_READY if FULL_APP_AVAILABLE else "not_applicable",
-        "database_url": database_url if FULL_APP_AVAILABLE else "not_available",
+        "database_type": "PostgreSQL" if FULL_APP_AVAILABLE and database_url != "DATABASE_URL not set" else "not_configured",
         "environment": "leapcell_serverless",
         "writable_dir": "/tmp" if not os.access('.', os.W_OK) else os.getcwd()
     }
