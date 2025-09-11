@@ -32,7 +32,11 @@ async def get_templates(
                 query = query.filter(PromptTemplate.complexity == complexity)
             
             templates = query.all()
-            
+
+            # If DB has no templates, fall back to static list
+            if not templates:
+                return _get_static_templates(category, complexity)
+
             return TemplateListResponse(
                 templates=[TemplateResponse.from_orm(template) for template in templates],
                 total_count=len(templates)
