@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
+from pathlib import Path
+from datetime import datetime
+import json
 from src.schemas.response_schemas import TemplateResponse, TemplateListResponse
 from src.models.database import get_db, PromptTemplate
 from src.api.dependencies_optional import get_current_user_optional
 from src.models.database import User
-import json
-import os
 
 router = APIRouter()
 
@@ -75,130 +76,37 @@ async def get_template(
 
 
 def _get_static_templates(category: Optional[str] = None, complexity: Optional[str] = None) -> TemplateListResponse:
-    """Fallback static templates when database is unavailable"""
-    
-    # Static template data - production ready examples
-    static_templates_data = [
-        {
-            "id": 1,
-            "name": "Customer Feedback Analysis",
-            "description": "Template for analyzing customer feedback sentiment and extracting insights",
-            "category": "analysis",
-            "complexity": "simple",
-            "template_data": {
-                "task": "sentiment_analysis",
-                "instructions": {
-                    "primary_goal": "Analyze customer feedback to determine sentiment and extract key insights",
-                    "steps": [
-                        "Read the customer feedback carefully",
-                        "Identify the overall sentiment (positive, negative, neutral)",
-                        "Extract specific issues or praise mentioned",
-                        "Categorize feedback by topic"
-                    ]
-                },
-                "input_format": {"type": "string", "description": "Customer feedback text"},
-                "output_format": {
-                    "type": "object",
-                    "properties": {
-                        "sentiment": {"type": "string"},
-                        "confidence": {"type": "number"},
-                        "topics": {"type": "array"},
-                        "summary": {"type": "string"}
-                    }
-                }
-            },
-            "created_at": "2025-01-10T22:00:00Z",
-            "updated_at": "2025-01-10T22:00:00Z",
-            "is_active": True
-        },
-        {
-            "id": 2,
-            "name": "Code Review Assistant",
-            "description": "Template for systematic code review and improvement suggestions",
-            "category": "development",
-            "complexity": "moderate",
-            "template_data": {
-                "task": "code_review",
-                "instructions": {
-                    "primary_goal": "Review code for quality, security, and best practices",
-                    "steps": [
-                        "Analyze code structure and readability",
-                        "Check for security vulnerabilities",
-                        "Verify adherence to coding standards",
-                        "Suggest improvements and optimizations"
-                    ]
-                },
-                "input_format": {"type": "string", "description": "Code snippet to review"},
-                "output_format": {
-                    "type": "object",
-                    "properties": {
-                        "overall_quality": {"type": "string"},
-                        "issues": {"type": "array"},
-                        "suggestions": {"type": "array"},
-                        "security_notes": {"type": "array"}
-                    }
-                }
-            },
-            "created_at": "2025-01-10T22:00:00Z",
-            "updated_at": "2025-01-10T22:00:00Z",
-            "is_active": True
-        },
-        {
-            "id": 3,
-            "name": "Content Summarization",
-            "description": "Template for creating concise summaries of long-form content",
-            "category": "writing",
-            "complexity": "simple",
-            "template_data": {
-                "task": "summarization",
-                "instructions": {
-                    "primary_goal": "Create a concise, accurate summary of the provided content",
-                    "steps": [
-                        "Identify the main topics and key points",
-                        "Extract the most important information",
-                        "Create a structured summary",
-                        "Ensure no critical information is lost"
-                    ]
-                },
-                "input_format": {"type": "string", "description": "Long-form text to summarize"},
-                "output_format": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string"},
-                        "key_points": {"type": "array"},
-                        "word_count": {"type": "number"}
-                    }
-                }
-            },
-            "created_at": "2025-01-10T22:00:00Z",
-            "updated_at": "2025-01-10T22:00:00Z",
-            "is_active": True
-        }
-    ]
-    
-    # Filter templates based on query parameters
-    filtered_templates = static_templates_data
+    """Fallback static templates when database is unavailable. Loads from templates/base_templates.json."""
+    # Locate static file relative to project root
+    base_file = Path(__file__).resolve().parents[3] / 'templates' / 'base_templates.json'
+    try:
+        with base_file.open('r', encoding='utf-8') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="Static templates file not found")
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"Static templates JSON parse error: {str(e)}")
+
+    # Map to TemplateResponse list
+    items: List[TemplateResponse] = []
+    idx = 1
+    for key, entry in data.items():
+        item = TemplateResponse(
+            id=idx,
+            name=entry.get('name', key),
+            description=entry.get('description', ''),
+            category=entry.get('category', key),
+            complexity=entry.get('complexity', 'moderate'),
+            components=entry.get('components', []),
+            created_at=datetime.utcnow()
+        )
+        items.append(item)
+        idx += 1
+
+    # Apply filters
     if category:
-        filtered_templates = [t for t in filtered_templates if t["category"] == category]
+        items = [t for t in items if t.category == category]
     if complexity:
-        filtered_templates = [t for t in filtered_templates if t["complexity"] == complexity]
-    
-    # Convert to TemplateResponse objects
-    template_responses = []
-    for template_data in filtered_templates:
-        template_responses.append(TemplateResponse(
-            id=template_data["id"],
-            name=template_data["name"],
-            description=template_data["description"],
-            category=template_data["category"],
-            template_data=template_data["template_data"],
-            complexity=template_data["complexity"],
-            created_at=template_data["created_at"],
-            updated_at=template_data["updated_at"],
-            is_active=template_data["is_active"]
-        ))
-    
-    return TemplateListResponse(
-        templates=template_responses,
-        total_count=len(template_responses)
-    )
+        items = [t for t in items if t.complexity == complexity]
+
+    return TemplateListResponse(templates=items, total_count=len(items))
