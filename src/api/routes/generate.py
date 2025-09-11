@@ -11,6 +11,9 @@ from src.api.dependencies_optional import get_current_user_optional
 from src.services.prompt_generator import PromptGenerator
 from src.utils.token_counter import TokenCounter
 from src.middleware.rate_limiter import apply_rate_limit, add_rate_limit_headers
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 prompt_generator = PromptGenerator()
@@ -50,8 +53,10 @@ async def generate_prompt(
                 endpoint="generate-prompt"
             )
         except HTTPException:
+            logger.exception("Rate limiter raised HTTPException")
             raise
         except Exception as e:
+            logger.exception("Rate limiting failed unexpectedly")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"RateLimitError: {str(e)}"
@@ -61,6 +66,7 @@ async def generate_prompt(
         try:
             prompt_structure = await prompt_generator.generate_prompt(prompt_request)
         except Exception as e:
+            logger.exception("Prompt generator failed")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"PromptGenerationError: {str(e)}"
@@ -147,6 +153,7 @@ async def generate_prompt(
         return add_rate_limit_headers(response, usage_stats)
         
     except Exception as e:
+        logger.exception("Unhandled error in generate_prompt route")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate prompt: {e.__class__.__name__}: {str(e)}"

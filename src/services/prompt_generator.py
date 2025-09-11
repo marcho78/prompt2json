@@ -88,7 +88,7 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
                 return self._extract_basic_patterns(description)
                 
         except Exception as e:
-            self.logger.error(f"LLM parsing failed with error: {str(e)}, falling back to pattern extraction")
+            self.logger.exception("LLM parsing failed, falling back to pattern extraction")
             # Fallback to basic pattern extraction
             return self._extract_basic_patterns(description)
     
@@ -159,6 +159,10 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
         """Build the structured prompt from parsed intent"""
         
         self.logger.info(f"Starting _build_prompt_structure with task_type: {parsed_intent.get('task_type', 'general')}")
+        try:
+            self.logger.debug("parsed_intent keys: %s", list(parsed_intent.keys()))
+        except Exception:
+            pass
         task_type = parsed_intent.get("task_type", "general")
         
         # Build instructions
@@ -196,8 +200,8 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
         try:
             estimated_tokens = await self.token_counter.count_tokens(json.dumps(prompt_dict))
             self.logger.info(f"Token counting completed: {estimated_tokens} tokens")
-        except Exception as e:
-            self.logger.error(f"Token counting failed: {str(e)}")
+        except Exception:
+            self.logger.exception("Token counting failed")
             estimated_tokens = 0
         
         self.logger.info("Creating PromptMetadata")
@@ -209,8 +213,8 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
                 estimated_tokens=estimated_tokens
             )
             self.logger.info("PromptMetadata created successfully")
-        except Exception as e:
-            self.logger.error(f"PromptMetadata creation failed: {str(e)}")
+        except Exception:
+            self.logger.exception("PromptMetadata creation failed")
             raise
         
         self.logger.info("Creating final PromptStructure")
@@ -242,8 +246,8 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
             )
             self.logger.info("PromptStructure created successfully")
             return result
-        except Exception as e:
-            self.logger.error(f"PromptStructure creation failed: {str(e)}")
+        except Exception:
+            self.logger.exception("PromptStructure creation failed")
             raise
     
     def _generate_primary_goal(self, parsed_intent: Dict[str, Any]) -> str:
