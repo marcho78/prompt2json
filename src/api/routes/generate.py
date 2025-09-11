@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from typing import Optional
 from src.config import settings
@@ -138,7 +139,8 @@ async def generate_prompt(
             if usage_stats['warnings']['near_token_limit']:
                 response_data['warnings'].append(f"You've used {usage_stats['warnings']['token_usage_percent']}% of your daily tokens")
         
-        response = JSONResponse(content=response_data)
+        # Ensure datetime and complex types are JSON-serializable
+        response = JSONResponse(content=jsonable_encoder(response_data))
         return add_rate_limit_headers(response, usage_stats)
         
     except Exception as e:
