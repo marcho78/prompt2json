@@ -69,6 +69,9 @@ async def generate_prompt(
         # Convert to dict for response and storage
         try:
             prompt_dict = prompt_structure.dict() if hasattr(prompt_structure, 'dict') else prompt_structure.__dict__
+            # Remove embedded metadata to prevent datetime serialization issues (metadata returned separately)
+            if isinstance(prompt_dict, dict) and 'metadata' in prompt_dict:
+                prompt_dict.pop('metadata', None)
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
