@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -29,6 +29,8 @@ class Example(BaseModel):
 
 
 class PromptMetadata(BaseModel):
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
+    
     version: str = Field(default="1.0")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     target_models: List[str] = Field(default=[])

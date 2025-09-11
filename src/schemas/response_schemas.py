@@ -1,20 +1,22 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+import json
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()}, from_attributes=True)
+    
     id: int
     username: str
     email: str
     is_active: bool
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class PromptMetadata(BaseModel):
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
+    
     estimated_tokens: int = Field(..., description="Estimated token count")
     complexity_score: float = Field(..., ge=0.0, le=1.0, description="Complexity score from 0 to 1")
     suggestions: List[str] = Field(default=[], description="Improvement suggestions")
@@ -74,6 +76,8 @@ class AnalyzePromptResponse(BaseModel):
 
 
 class TemplateResponse(BaseModel):
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()}, from_attributes=True)
+    
     id: int
     name: str
     description: str
@@ -81,9 +85,6 @@ class TemplateResponse(BaseModel):
     complexity: str
     components: List[str] = Field(default=[])
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 
 class TemplateListResponse(BaseModel):
@@ -92,6 +93,8 @@ class TemplateListResponse(BaseModel):
 
 
 class ErrorResponse(BaseModel):
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
+    
     error: str
     detail: str
     code: int

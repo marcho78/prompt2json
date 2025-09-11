@@ -94,13 +94,16 @@ async def generate_prompt(
                 # Get DB session only when needed
                 db = next(get_db())
                 try:
+                    # Use model_dump for proper datetime serialization
+                    metadata_for_db = metadata.model_dump(mode='json') if hasattr(metadata, 'model_dump') else metadata.dict()
+                    
                     db_prompt = GeneratedPrompt(
                         user_id=current_user.id,
                         description=prompt_request.description,
                         target_llm=prompt_request.target_llm.value,
                         complexity=prompt_request.complexity.value,
                         prompt_data=prompt_dict,
-                        prompt_metadata=metadata.dict(),
+                        prompt_metadata=metadata_for_db,
                         optimization_goals=[goal.value for goal in prompt_request.optimization_goals]
                     )
                     
@@ -114,9 +117,12 @@ async def generate_prompt(
                 print(f"Warning: Failed to store prompt in database: {db_error}")
         
         # Create response with rate limiting info
+        # Use model_dump to properly serialize datetime objects
+        metadata_dict = metadata.model_dump(mode='json') if hasattr(metadata, 'model_dump') else metadata.dict()
+        
         response_data = {
             'prompt': prompt_dict,
-            'metadata': metadata.dict(),
+            'metadata': metadata_dict,
             'rate_limit_info': {
                 'requests_remaining': usage_stats['usage']['requests_remaining'],
                 'tokens_remaining': usage_stats['usage']['tokens_remaining'],
