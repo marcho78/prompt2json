@@ -353,17 +353,25 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
         # For now, return basic examples
         # In a full implementation, this could use the LLM to generate realistic examples
         
-        examples = []
+        examples: List[Example] = []
         suggested_examples = parsed_intent.get("examples", [])
-        
-        if suggested_examples:
-            for ex in suggested_examples[:3]:  # Limit to 3 examples
+
+        # Normalize examples to a list of mappings
+        if isinstance(suggested_examples, dict):
+            suggested_list = [suggested_examples]
+        elif isinstance(suggested_examples, list):
+            suggested_list = suggested_examples
+        else:
+            suggested_list = []
+
+        for ex in suggested_list[:3]:  # Limit to 3 examples
+            if isinstance(ex, dict):
                 examples.append(Example(
                     input=ex.get("input", "Sample input"),
                     output=ex.get("output", "Sample output"),
                     explanation=ex.get("explanation")
                 ))
-        
+
         return examples
     
     def _build_components(
