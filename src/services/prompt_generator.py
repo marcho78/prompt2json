@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Optional
 import json
 import re
+import logging
 from datetime import datetime
 from src.schemas.request_schemas import GeneratePromptRequest, TargetLLM, Complexity
 from src.schemas.prompt_schemas import (
@@ -15,6 +16,7 @@ class PromptGenerator:
     """Core prompt generation service"""
     
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.token_counter = TokenCounter()
         self.templates = self._load_templates()
     
@@ -37,6 +39,8 @@ class PromptGenerator:
     
     async def _parse_description(self, description: str) -> Dict[str, Any]:
         """Parse natural language description to extract intent and structure"""
+        
+        self.logger.info(f"Starting _parse_description with description length: {len(description)}")
         
         # Create a prompt for the LLM to parse the user's description
         parsing_messages = [
@@ -65,20 +69,26 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
         ]
         
         try:
+            self.logger.info("Attempting LLM parsing of description")
             response = await llm_orchestrator.generate_with_fallback(
                 messages=parsing_messages,
                 temperature=0.3  # Lower temperature for more consistent parsing
             )
             
+            self.logger.info(f"LLM response received, length: {len(response.get('text', ''))}")
+            
             # Try to extract JSON from the response
             parsed_response = self._extract_json(response["text"])
             if parsed_response:
+                self.logger.info("Successfully parsed JSON from LLM response")
                 return parsed_response
             else:
+                self.logger.warning("Could not extract JSON from LLM response, falling back to pattern extraction")
                 # Fallback to basic pattern extraction
                 return self._extract_basic_patterns(description)
                 
         except Exception as e:
+            self.logger.error(f"LLM parsing failed with error: {str(e)}, falling back to pattern extraction")
             # Fallback to basic pattern extraction
             return self._extract_basic_patterns(description)
     
@@ -103,6 +113,7 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
     def _extract_basic_patterns(self, description: str) -> Dict[str, Any]:
         """Basic pattern extraction as fallback"""
         
+        self.logger.info("Using basic pattern extraction fallback")
         description_lower = description.lower()
         
         # Determine task type based on keywords
@@ -118,7 +129,7 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
         elif any(word in description_lower for word in ["write", "story", "creative"]):
             task_type = "creative_writing"
         
-        return {
+        result = {
             "task_type": task_type,
             "input_format": {
                 "type": "string",
@@ -133,6 +144,9 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
             "examples": [],
             "edge_cases": []
         }
+        
+        self.logger.info(f"Basic pattern extraction completed, task_type: {task_type}")
+        return result
     
     async def _build_prompt_structure(
         self, 
@@ -144,6 +158,7 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
     ) -> PromptStructure:
         """Build the structured prompt from parsed intent"""
         
+        self.logger.info(f"Starting _build_prompt_structure with task_type: {parsed_intent.get('task_type', 'general')}")
         task_type = parsed_intent.get("task_type", "general")
         
         # Build instructions
@@ -168,6 +183,7 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
             components = self._build_components(parsed_intent, complexity, include_examples)
         
         # Create metadata
+        self.logger.info("Building prompt dictionary for token counting")
         prompt_dict = {
             "task": task_type,
             "instructions": instructions.dict(),
@@ -176,27 +192,59 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
             "examples": [ex.dict() for ex in examples]
         }
         
-        estimated_tokens = await self.token_counter.count_tokens(json.dumps(prompt_dict))
+        self.logger.info(f"Starting token counting for prompt_dict with {len(json.dumps(prompt_dict))} characters")
+        try:
+            estimated_tokens = await self.token_counter.count_tokens(json.dumps(prompt_dict))
+            self.logger.info(f"Token counting completed: {estimated_tokens} tokens")
+        except Exception as e:
+            self.logger.error(f"Token counting failed: {str(e)}")
+            estimated_tokens = 0
         
-        metadata = PromptMetadata(
-            version="1.0",
-            created_at=datetime.utcnow(),
-            target_models=[target_llm.value],
-            estimated_tokens=estimated_tokens
-        )
+        self.logger.info("Creating PromptMetadata")
+        try:
+            metadata = PromptMetadata(
+                version="1.0",
+                created_at=datetime.utcnow(),
+                target_models=[target_llm.value],
+                estimated_tokens=estimated_tokens
+            )
+            self.logger.info("PromptMetadata created successfully")
+        except Exception as e:
+            self.logger.error(f"PromptMetadata creation failed: {str(e)}")
+            raise
         
-        return PromptStructure(
-            task=task_type,
-            system_message=self._generate_system_message(parsed_intent, target_llm),
-            instructions=instructions,
-            input_format=input_format,
-            output_format=output_format,
-            examples=examples,
-            constraints=parsed_intent.get("constraints", []),
-            edge_cases=parsed_intent.get("edge_cases", []),
-            components=components,
-            metadata=metadata
-        )
+        self.logger.info("Creating final PromptStructure")
+        try:
+            # Handle constraints and edge_cases that might be strings
+            constraints = parsed_intent.get("constraints", [])
+            if isinstance(constraints, str):
+                constraints = [constraints]
+            elif not isinstance(constraints, list):
+                constraints = []
+            
+            edge_cases = parsed_intent.get("edge_cases", [])
+            if isinstance(edge_cases, str):
+                edge_cases = [edge_cases]
+            elif not isinstance(edge_cases, list):
+                edge_cases = []
+            
+            result = PromptStructure(
+                task=task_type,
+                system_message=self._generate_system_message(parsed_intent, target_llm),
+                instructions=instructions,
+                input_format=input_format,
+                output_format=output_format,
+                examples=examples,
+                constraints=constraints,
+                edge_cases=edge_cases,
+                components=components,
+                metadata=metadata
+            )
+            self.logger.info("PromptStructure created successfully")
+            return result
+        except Exception as e:
+            self.logger.error(f"PromptStructure creation failed: {str(e)}")
+            raise
     
     def _generate_primary_goal(self, parsed_intent: Dict[str, Any]) -> str:
         """Generate primary goal from parsed intent"""
@@ -259,10 +307,19 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
         
         input_spec = parsed_intent.get("input_format", {})
         
+        # Handle constraints that might be strings or lists
+        constraints = input_spec.get("constraints", [])
+        if isinstance(constraints, str):
+            # Convert string to list with single item
+            constraints = [constraints]
+        elif not isinstance(constraints, list):
+            # Fallback for other types
+            constraints = []
+        
         return InputFormat(
             type=input_spec.get("type", "string"),
             description=input_spec.get("description", "Input data to process"),
-            constraints=input_spec.get("constraints", [])
+            constraints=constraints
         )
     
     def _build_output_format(self, parsed_intent: Dict[str, Any]) -> OutputFormat:
@@ -270,10 +327,19 @@ Provide a detailed analysis in JSON format with task_type, input_format, output_
         
         output_spec = parsed_intent.get("output_format", {})
         
+        # Handle required fields that might be strings or lists
+        required = output_spec.get("required", [])
+        if isinstance(required, str):
+            # Convert string to list with single item
+            required = [required]
+        elif not isinstance(required, list):
+            # Fallback for other types
+            required = []
+        
         return OutputFormat(
             type=output_spec.get("type", "object"),
             properties=output_spec.get("properties"),
-            required=output_spec.get("required", [])
+            required=required
         )
     
     async def _generate_examples(
