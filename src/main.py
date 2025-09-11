@@ -52,6 +52,12 @@ async def health_check():
         "version": settings.VERSION
     }
 
+@app.get("/kaithhealthcheck")
+@app.get("/kaithheathcheck")
+async def leapcell_health_check():
+    """Health endpoints for Leapcell reverse proxy probes."""
+    return {"status": "healthy"}
+
 @app.get("/")
 async def root():
     """Root endpoint with API information"""

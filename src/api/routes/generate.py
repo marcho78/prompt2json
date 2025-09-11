@@ -31,19 +31,39 @@ async def generate_prompt(
     
     try:
         # Estimate tokens for this request
-        estimated_tokens = await _estimate_request_tokens(prompt_request)
-        
+        try:
+            estimated_tokens = await _estimate_request_tokens(prompt_request)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"TokenEstimationError: {str(e)}"
+            )
+
         # Apply rate limiting
-        user_id = str(current_user.id) if current_user else None
-        usage_stats = await apply_rate_limit(
-            request=request,
-            estimated_tokens=estimated_tokens,
-            user_id=user_id,
-            endpoint="generate-prompt"
-        )
-        
+        try:
+            user_id = str(current_user.id) if current_user else None
+            usage_stats = await apply_rate_limit(
+                request=request,
+                estimated_tokens=estimated_tokens,
+                user_id=user_id,
+                endpoint="generate-prompt"
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"RateLimitError: {str(e)}"
+            )
+
         # Generate the prompt structure
-        prompt_structure = await prompt_generator.generate_prompt(prompt_request)
+        try:
+            prompt_structure = await prompt_generator.generate_prompt(prompt_request)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"PromptGenerationError: {str(e)}"
+            )
         
         # Convert to dict for response and storage
         try:
@@ -118,7 +138,7 @@ async def generate_prompt(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate prompt: {str(e)}"
+            detail=f"Failed to generate prompt: {e.__class__.__name__}: {str(e)}"
         )
 
 

@@ -17,7 +17,13 @@ def get_engine():
     global engine
     if engine is None:
         database_url = settings.get_database_url()
-        engine = create_engine(database_url, echo=settings.DEBUG)
+        # Harden connection handling for serverless/proxy environments (e.g., Neon/Leapcell)
+        engine = create_engine(
+            database_url,
+            echo=settings.DEBUG,
+            pool_pre_ping=True,   # validate connections before use to avoid stale/closed SSL sessions
+            pool_recycle=300      # recycle connections periodically to reduce idle disconnects
+        )
     return engine
 
 def get_session_local():
